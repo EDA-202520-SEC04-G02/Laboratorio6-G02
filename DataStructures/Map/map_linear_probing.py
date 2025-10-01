@@ -40,9 +40,7 @@ def is_available(table, pos):
 # Funciones adicionales no dadas
 
 def rehash(my_map):
-    """
-    Realiza un rehash de la tabla de símbolos con linear probing.
-    """
+
     # nueva capacidad
     new_capacity = mf.next_prime(2 * my_map["capacity"])
 
@@ -56,10 +54,6 @@ def rehash(my_map):
             put(new_map_obj, me.get_key(entry), me.get_value(entry))
 
     return new_map_obj
-
-from DataStructures.List import array_list as al
-from DataStructures.Map import map_entry as me
-from DataStructures.Map import map_functions as mf
 
 def get(my_map, key):
     start = mf.hash_value(my_map, key)
@@ -78,9 +72,7 @@ def contains(my_map, key):
 # Funciones requeridas
 
 def new_map(num_elements, load_factor, prime=109345121):
-    """
-    Crea una nueva tabla de hash (map) con Linear Probing usando array_list.
-    """
+
     if load_factor <= 0:
         raise ValueError("El load_factor debe ser mayor que 0")
 
@@ -107,10 +99,7 @@ def new_map(num_elements, load_factor, prime=109345121):
     }
 
 def put(my_map, key, value):
-    """
-    Agrega una nueva entrada llave-valor a la tabla.
-    Si la llave ya existe, actualiza el valor.
-    """
+
     # 1. hash de la llave
     start = mf.hash_value(my_map, key)
 
@@ -136,9 +125,7 @@ def put(my_map, key, value):
     return my_map
 
 def remove(my_map, key):
-    """
-    Elimina la entrada asociada a una llave dada en la tabla de símbolos.
-    """
+
     h = mf.hash_value(my_map, key)
     ocupied, pos = find_slot(my_map, key, h)
 
@@ -152,8 +139,27 @@ def remove(my_map, key):
     return my_map
 
 def size(my_map):
-    """
-    Retorna el número de elementos en la tabla de símbolos.
-    """
+
     return my_map["size"]
+
+def is_empty(my_map):
+
+    return my_map["size"] == 0
+def key_set(my_map):
+
+    keys = al.new_list()
+    for i in range(al.size(my_map["table"])):
+        entry = al.get_element(my_map["table"], i)
+        if entry is not None and me.get_key(entry) not in (None, "__EMPTY__"):
+            al.add_last(keys, me.get_key(entry))
+    return keys
+def value_set(my_map):
+
+    values = al.new_list()
+    for i in range(al.size(my_map["table"])):
+        entry = al.get_element(my_map["table"], i)
+        if entry is not None and me.get_key(entry) not in (None, "__EMPTY__"):
+            al.add_last(values, me.get_value(entry))
+    return values
+
 
