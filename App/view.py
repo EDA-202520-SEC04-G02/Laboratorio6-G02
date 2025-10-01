@@ -27,7 +27,9 @@
 import sys
 import App.logic as logic
 # TODO Realice la importación del mapa linear probing
+from DataStructures.Map import map_linear_probing as lp
 # TODO Realice la importación de ArrayList como estructura de datos auxiliar para sus requerimientos
+from DataStructures.List import array_list as al
 
 
 """
