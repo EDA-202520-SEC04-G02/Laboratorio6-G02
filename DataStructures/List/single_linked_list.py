@@ -326,3 +326,32 @@ def quick_sort(my_list, sort_crit):
         current = current["next"]
 
     return result
+
+def remove_at(lst, index):
+    """
+    Elimina y retorna el elemento en la posición `index` (0-based)
+    de la lista enlazada simple usada en EDA.
+    """
+    if index < 0 or index >= lst["size"]:
+        raise IndexError("Index out of range")
+
+    current = lst["first"]
+    prev = None
+
+    for i in range(index):
+        prev = current
+        current = current["next"]
+
+    # current es el nodo a eliminar
+    if prev is None:
+        # eliminar el primero
+        lst["first"] = current["next"]
+        if lst["size"] == 1:   # si solo había un nodo
+            lst["last"] = None
+    else:
+        prev["next"] = current["next"]
+        if current == lst["last"]:  # si era el último
+            lst["last"] = prev
+
+    lst["size"] -= 1
+    return current["info"]
