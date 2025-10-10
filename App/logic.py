@@ -287,7 +287,22 @@ def get_book_info_by_book_id(catalog, good_reads_book_id):
     Retorna toda la informacion que se tenga almacenada de un libro según su good_reads_id.
     """
     #TODO Completar función de consulta
-    pass
+    
+    try:
+        book_id = int(float(good_reads_book_id))
+    except (TypeError, ValueError):
+        return None
+
+    books_list = catalog['books']
+    n = al.size(books_list)
+    for i in range(n):
+        book = al.get_element(books_list, i)
+        try:
+            if int(book["goodreads_book_id"]) == book_id:
+                return book
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def get_books_by_author(catalog, author_name):
@@ -295,7 +310,13 @@ def get_books_by_author(catalog, author_name):
     Retorna los libros asociado al autor ingresado por párametro
     """
     #TODO Completar función de consulta
-    pass
+    authors_list = catalog['authors']
+    n = al.size(authors_list)
+    for i in range(n):
+        author = al.get_element(authors_list, i)
+        if author and author.get("name", "").lower() == str(author_name).lower():
+            return author.get("books", al.new_list())
+    return al.new_list()
 
 
 def get_books_by_tag(catalog, tag_name):
@@ -309,7 +330,29 @@ def get_books_by_tag(catalog, tag_name):
 
     """
     #TODO Completar función de consulta
-    pass
+    
+    tags_list = catalog['tags']
+    tag_id = None
+    nt = al.size(tags_list)
+    for i in range(nt):
+        tag = al.get_element(tags_list, i)
+        if tag and tag.get("name") == tag_name:
+            tag_id = tag.get("tag_id")
+            break
+    if tag_id is None:
+        return 0
+    unique_book_ids = set()
+    bt_list = catalog['book_tags']
+    nb = al.size(bt_list)
+    for i in range(nb):
+        bt = al.get_element(bt_list, i)
+        if bt and bt.get("tag_id") == tag_id:
+            try:
+                gid = int(float(bt.get("goodreads_book_id", 0)))
+                unique_book_ids.add(gid)
+            except (TypeError, ValueError):
+                continue
+    return len(unique_book_ids)
 
 
 def get_books_by_author_pub_year(catalog, author_name, pub_year):
@@ -326,7 +369,41 @@ def get_books_by_author_pub_year(catalog, author_name, pub_year):
     start_memory = getMemory()
     
     # TODO Completar la función de consulta
-    resultado = None  # Sustituir con la lógica real
+    
+    
+    if pub_year is None or str(pub_year).strip() == "":
+        target_publication_year = 0
+    else:
+        try:
+            target_publication_year = int(float(pub_year))
+        except (ValueError, TypeError):
+            target_publication_year = 0
+
+    resultado = al.new_list()
+    books_list = catalog['books']
+    total_books = al.size(books_list)
+
+    for i in range(total_books):
+        book = al.get_element(books_list, i)
+        raw_book_year = book.get('original_publication_year')
+
+        if raw_book_year is None or str(raw_book_year).strip() == "":
+            normalized_book_year = 0
+        else:
+            try:
+                normalized_book_year = int(float(raw_book_year))
+            except (ValueError, TypeError):
+                normalized_book_year = 0
+
+        if normalized_book_year == target_publication_year:
+            authors_field = book.get('authors', '')
+            authors_list = [author.strip() for author in str(authors_field).split(',')]
+            author_found = False
+            for current_author in authors_list:
+                if current_author.lower() == str(author_name).lower():
+                    author_found = True
+            if author_found:
+                al.add_last(resultado, book)
     
     # Detener medición de memoria
     stop_memory = getMemory()

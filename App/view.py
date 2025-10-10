@@ -30,6 +30,8 @@ import App.logic as logic
 from DataStructures.Map import map_linear_probing as lp
 # TODO Realice la importación de ArrayList como estructura de datos auxiliar para sus requerimientos
 from DataStructures.List import array_list as al
+from logic import getTime, getMemory, deltaTime, deltaMemory
+import tracemalloc
 
 
 """
@@ -52,10 +54,20 @@ def new_logic():
 # TODO Incluir las mediciones de tiempo y uso de memoria en la ejecución de la consulta.
 def load_data(control):
     """
-    Solicita a la controlador que cargue los datos
+    Solicita al controlador que cargue los datos con mediciones de tiempo y memoria
     """
+    start_time = getTime()
+    tracemalloc.start()
+    start_memory = getMemory()
+
     books, authors, tags, book_tags = logic.load_data(control)
-    return books, authors, tags, book_tags
+
+    stop_memory = getMemory()
+    end_time = getTime()
+    tiempo_transcurrido = deltaTime(end_time, start_time)
+    memoria_usada = deltaMemory(start_memory, stop_memory)
+
+    return books, authors, tags, book_tags, tiempo_transcurrido, memoria_usada
 
 #  -------------------------------------------------------------
 # Funciones para la correcta impresión de los datos
@@ -159,6 +171,8 @@ def main():
             print('Géneros cargados: ' + str(tg))
             print('Asociación de Géneros a Libros cargados: ' +
                   str(bktg))
+            print(f"Tiempo de carga (ms): {t_ms:.3f}")
+            print(f"Memoria usada (KB): {mem_kb:.3f}")
 
         elif int(inputs[0]) == 2:
             number = input("Ingrese el id del libro (good_read_book_id) que desea buscar: ")
