@@ -55,17 +55,7 @@ def load_data(control):
     """
     Solicita al controlador que cargue los datos con mediciones de tiempo y memoria
     """
-    start_time = logic.getTime()
-    tracemalloc.start()
-    start_memory = logic.getMemory()
-
-    books, authors, tags, book_tags = logic.load_data(control)
-
-    stop_memory = logic.getMemory()
-    end_time = logic.getTime()
-    tiempo_transcurrido = logic.deltaTime(end_time, start_time)
-    memoria_usada = logic.deltaMemory(start_memory, stop_memory)
-
+    books, authors, tags, book_tags, tiempo_transcurrido, memoria_usada = logic.load_data(control)
     return books, authors, tags, book_tags, tiempo_transcurrido, memoria_usada
 
 #  -------------------------------------------------------------
@@ -82,6 +72,8 @@ def print_menu():
     print("3- Consultar los libros de un autor")
     print("4- Consultar los libros según un género dado")
     print("5- Consultar los libros de un autor para un año de publicación especifico")
+    print("6-Funcion Final Linear Probing")
+    print("7-Funcion Final Separate Chaining")
     print("8- Salir")
 
 def print_book_info(book):
@@ -164,7 +156,7 @@ def main():
         # TODO agregar tiempo de ejecución y consumo de memoria
         if int(inputs[0]) == 1:
             print("Cargando información de los archivos ....")
-            bk, at, tg, bktg = load_data(control)
+            bk, at, tg, bktg, tiempo_transcurrido, memoria_usada = load_data(control)
             print('Libros cargados: ' + str(bk))
             print('Autores cargados: ' + str(at))
             print('Géneros cargados: ' + str(tg))
@@ -195,6 +187,24 @@ def main():
             books_by_author_pub_year, tiempo_transcurrido, memoria_usada = logic.get_books_by_author_pub_year(control, author_name, pub_year)
 
             print_books_by_auth_year(author_name, pub_year, books_by_author_pub_year, tiempo_transcurrido, memoria_usada)
+            
+        elif int(inputs[0]) == 6:
+            author_name = input("Ingrese el nombre del autor que desea buscar:\n")
+            pub_year = input("Ingrese la fecha de publicación que desea buscar:\n") 
+
+            books_by_author_pub_year, tiempo_transcurrido, memoria_usada = logic.get_books_by_author_pub_year_lp(control, author_name, pub_year)
+
+            print_books_by_auth_year(author_name, pub_year, books_by_author_pub_year, tiempo_transcurrido, memoria_usada)
+            
+        elif int(inputs[0]) == 7:
+            author_name = input("Ingrese el nombre del autor que desea buscar:\n")
+            pub_year = input("Ingrese la fecha de publicación que desea buscar:\n") 
+
+            books_by_author_pub_year, tiempo_transcurrido, memoria_usada = logic.get_books_by_author_pub_year_sc(control, author_name, pub_year)
+
+            print_books_by_auth_year(author_name, pub_year, books_by_author_pub_year, tiempo_transcurrido, memoria_usada)
+            
+            
 
             
         elif int(inputs[0]) == 8:

@@ -29,13 +29,14 @@ import csv
 import time
 import tracemalloc
 
+#empece el codigo con lp para las pruebas ponia el que no iba a usar como comentario ya que las dos estan importadas como lp
 
 # TODO DONE Realice la importación del mapa linear probing
 from DataStructures.Map import map_linear_probing as lp
 # TODO DONE Realice la importación de ArrayList como estructura de datos auxiliar para sus requerimientos
 from DataStructures.List import array_list as al
 # TODO DONE Realice la importación del mapa separate chaining
-from DataStructures.Map import map_separate_chaining as sp
+from DataStructures.Map import map_separate_chaining as lp
 
 
 data_dir = os.path.dirname(os.path.realpath('__file__')) + '/Data/GoodReads/'
@@ -53,25 +54,28 @@ def new_logic():
                "tags": None,
                "book_tags": None}
 
+
+    FC_LP= 0.1
+    FC_SC= 2.0
     #Lista que contiene la totalidad de los libros cargados
     catalog['books'] = al.new_list()
 
     #Tabla de Hash que contiene los libros indexados por good_reads_book_id  
     #(good_read_id -> book)
-    catalog['books_by_id'] = lp.new_map(10000, 0.7) #TODO DONE completar la creación del mapa
+    catalog['books_by_id'] = lp.new_map(10000, FC_LP) #TODO DONE completar la creación del mapa
 
     #Tabla de Hash con la siguiente pareja llave valor: (author_name -> List(books))
-    catalog['books_by_authors'] = lp.new_map(4664, 0.7) #TODO DONE completar la creación del mapa
+    catalog['books_by_authors'] = lp.new_map(4664, FC_LP) #TODO DONE completar la creación del mapa
 
     #Tabla de Hash con la siguiente pareja llave valor: (tag_name -> tag)
-    catalog['tags'] = lp.new_map(34252, 0.7) #TODO DONE completar la creación del mapa
+    catalog['tags'] = lp.new_map(34252, FC_LP) #TODO DONE completar la creación del mapa
 
     #Tabla de Hash con la siguiente pareja llave valor: (tag_id -> book_tags)
-    catalog['book_tags'] = lp.new_map(1000,0.7)
+    catalog['book_tags'] = lp.new_map(1000,FC_LP)
 
     #Tabla de Hash principal que contiene sub-mapas dentro de los valores
     #con la siguiente representación de la pareja llave valor: (author_name -> (original_publication_year -> list(books)))
-    catalog['books_by_year_author'] = lp.new_map(4664, 0.7) #TODO DONE completar la creación del mapa
+    catalog['books_by_year_author'] = lp.new_map(4664, FC_LP) #TODO DONE completar la creación del mapa
     
     return catalog
 
@@ -310,13 +314,13 @@ def get_books_by_author(catalog, author_name):
     Retorna los libros asociado al autor ingresado por párametro
     """
     #TODO Completar función de consulta
-    authors_list = catalog['authors']
-    n = al.size(authors_list)
-    for i in range(n):
-        author = al.get_element(authors_list, i)
-        if author and author.get("name", "").lower() == str(author_name).lower():
-            return author.get("books", al.new_list())
-    return al.new_list()
+    m = catalog.get("books_by_authors")
+    if m is None:
+        return author_name, al.new_list()
+    lst = lp.get(m, author_name)
+    if lst is None:
+        lst = al.new_list()
+    return author_name, lst
 
 
 def get_books_by_tag(catalog, tag_name):
@@ -331,46 +335,76 @@ def get_books_by_tag(catalog, tag_name):
     """
     #TODO Completar función de consulta
     
-    tags_list = catalog['tags']
-    tag_id = None
-    nt = al.size(tags_list)
-    for i in range(nt):
-        tag = al.get_element(tags_list, i)
-        if tag and tag.get("name") == tag_name:
-            tag_id = tag.get("tag_id")
-            break
-    if tag_id is None:
-        return 0
-    unique_book_ids = set()
-    bt_list = catalog['book_tags']
-    nb = al.size(bt_list)
-    for i in range(nb):
-        bt = al.get_element(bt_list, i)
-        if bt and bt.get("tag_id") == tag_id:
+    tags_map = catalog.get("tags")
+    book_tags_map = catalog.get("book_tags")
+    books_by_id = catalog.get("books_by_id")
+    books_list = catalog.get("books")
+
+    resultado = al.new_list()
+    if tags_map is None or book_tags_map is None:
+        return resultado
+
+    tag_info = lp.get(tags_map, tag_name)
+    if tag_info is None:
+        return resultado
+
+    tag_id = tag_info.get("tag_id")
+    relaciones = lp.get(book_tags_map, tag_id)
+    if relaciones is None:
+        return resultado
+
+    agregados = set()
+    n = al.size(relaciones)
+    for i in range(n):
+        relacion = al.get_element(relaciones, i)
+        if relacion is None:
+            continue
+        raw_id = relacion.get("goodreads_book_id") or relacion.get("book_id")
+        try:
+            book_id_int = int(float(raw_id))
+        except (TypeError, ValueError):
+            continue
+
+        if book_id_int in agregados:
+            continue
+
+        libro = None
+
+        if books_by_id is not None:
             try:
-                gid = int(float(bt.get("goodreads_book_id", 0)))
-                unique_book_ids.add(gid)
-            except (TypeError, ValueError):
-                continue
-    return len(unique_book_ids)
+                libro = lp.get(books_by_id, book_id_int)
+            except TypeError:
+                libro = None
+            if libro is None:
+                try:
+                    libro = lp.get(books_by_id, str(book_id_int))
+                except TypeError:
+                    libro = None
+
+        if libro is None and books_list is not None:
+            m = al.size(books_list)
+            j = 0
+            while j < m and libro is None:
+                b = al.get_element(books_list, j)
+                try:
+                    if int(float(b.get("goodreads_book_id"))) == book_id_int:
+                        libro = b
+                except (TypeError, ValueError):
+                    pass
+                j += 1
+
+        if libro is not None:
+            agregados.add(book_id_int)
+            al.add_last(resultado, libro)
+
+    return resultado
 
 
-def get_books_by_author_pub_year(catalog, author_name, pub_year):
-    """
-    - Se obtiene el mapa asociado al author_name dado
-    - Si el author existe, se obtiene el mapa asociado al año de publicación
-    Retorna los libros asociados a un autor y un año de publicación específicos
-    """
-    # Iniciar medición de tiempo
+def get_books_by_author_pub_year_lp(catalog, author_name, pub_year):
     start_time = getTime()
-    
-    # Iniciar medición de memoria
     tracemalloc.start()
     start_memory = getMemory()
-    
-    # TODO Completar la función de consulta
-    
-    
+
     if pub_year is None or str(pub_year).strip() == "":
         target_publication_year = 0
     else:
@@ -380,40 +414,52 @@ def get_books_by_author_pub_year(catalog, author_name, pub_year):
             target_publication_year = 0
 
     resultado = al.new_list()
-    books_list = catalog['books']
-    total_books = al.size(books_list)
+    books_by_author_and_year_map = catalog.get('books_by_year_author')
+    if books_by_author_and_year_map is not None:
+        author_year_map = lp.get(books_by_author_and_year_map, author_name)
+        if author_year_map is not None:
+            books_in_year = lp.get(author_year_map, target_publication_year)
+            if books_in_year is not None:
+                resultado = books_in_year
 
-    for i in range(total_books):
-        book = al.get_element(books_list, i)
-        raw_book_year = book.get('original_publication_year')
-
-        if raw_book_year is None or str(raw_book_year).strip() == "":
-            normalized_book_year = 0
-        else:
-            try:
-                normalized_book_year = int(float(raw_book_year))
-            except (ValueError, TypeError):
-                normalized_book_year = 0
-
-        if normalized_book_year == target_publication_year:
-            authors_field = book.get('authors', '')
-            authors_list = [author.strip() for author in str(authors_field).split(',')]
-            author_found = False
-            for current_author in authors_list:
-                if current_author.lower() == str(author_name).lower():
-                    author_found = True
-            if author_found:
-                al.add_last(resultado, book)
-    
-    # Detener medición de memoria
     stop_memory = getMemory()
-    
-    # Calcular medición de tiempo y memoria
     end_time = getTime()
     tiempo_transcurrido = deltaTime(end_time, start_time)
     memoria_usada = deltaMemory(start_memory, stop_memory)
     
     return resultado, tiempo_transcurrido, memoria_usada
+
+def get_books_by_author_pub_year_sc(catalog, author_name, pub_year):
+    start_time = getTime()
+    tracemalloc.start()
+    start_memory = getMemory()
+
+    if pub_year is None or str(pub_year).strip() == "":
+        target_publication_year = 0
+    else:
+        try:
+            target_publication_year = int(float(pub_year))
+        except (ValueError, TypeError):
+            target_publication_year = 0
+
+    resultado = al.new_list()
+    books_by_author_and_year_map = catalog.get('books_by_year_author')
+    if books_by_author_and_year_map is not None:
+        author_year_map = lp.get(books_by_author_and_year_map, author_name)
+        if author_year_map is not None:
+            books_in_year =lp.get(author_year_map, target_publication_year)
+            if books_in_year is not None:
+                resultado = books_in_year
+
+    stop_memory = getMemory()
+    end_time = getTime()
+    tiempo_transcurrido = deltaTime(end_time, start_time)
+    memoria_usada = deltaMemory(start_memory, stop_memory)
+    
+    return resultado, tiempo_transcurrido, memoria_usada
+
+
+
 
 
 #  -------------------------------------------------------------

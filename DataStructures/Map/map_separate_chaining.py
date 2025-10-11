@@ -51,7 +51,7 @@ def rehash(my_map):
         new_capacity = mf.next_prime(old_capacity * 2 + 1)
 
     # crear nueva tabla vacía
-    new_map_obj = new_map(new_capacity, my_map["limit_factor"], my_map["prime"])
+    new_map_obj = new_map(new_capacity * my_map["limit_factor"], my_map["limit_factor"], my_map["prime"])
 
     # recorrer cada bucket y reinsertar todos los elementos
     for i in range(al.size(old_table)):
@@ -59,7 +59,7 @@ def rehash(my_map):
         for j in range(sl.size(bucket)):
             entry = sl.get_element(bucket, j)
             if entry is not None and me.get_key(entry) is not None:
-                put(new_map_obj, me.get_key(entry), me.get_value(entry))
+                put(new_map_obj, me.get_key(entry), me.get_value(entry), rehashing=True)
 
     # copiar la referencia de la nueva tabla al objeto original
     my_map.update(new_map_obj) # Así es más rápido que hacerlo uno por uno
@@ -67,7 +67,7 @@ def rehash(my_map):
     return my_map
 
 
-def put(my_map, key, value):
+def put(my_map, key, value, rehashing=False):
     """
     Agrega una nueva entrada llave-valor a la tabla con separate chaining.
     Si la llave ya existe, se actualiza su valor.
@@ -81,6 +81,10 @@ def put(my_map, key, value):
         if me.get_key(entry) == key:
             # actualizar valor
             entry["value"] = value
+            
+            if not rehashing and my_map["current_factor"] > my_map["limit_factor"]:
+                return rehash(my_map)
+            
             return my_map  # no cambia size ni factor
 
     # insertar nueva entrada
